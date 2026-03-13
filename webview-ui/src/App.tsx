@@ -14,6 +14,7 @@ import { useEditorKeyboard } from './hooks/useEditorKeyboard.js'
 import { ZoomControls } from './components/ZoomControls.js'
 import { BottomToolbar } from './components/BottomToolbar.js'
 import { DebugView } from './components/DebugView.js'
+import { PromptInput } from './components/PromptInput.js'
 
 // Game state lives outside React — updated imperatively by message handlers
 const officeStateRef = { current: null as OfficeState | null }
@@ -294,6 +295,16 @@ function App() {
         zoom={editor.zoom}
         panRef={editor.panRef}
         onCloseAgent={handleCloseAgent}
+      />
+
+      <PromptInput
+        officeState={officeState}
+        agentTools={agentTools}
+        agentStatuses={agentStatuses}
+        containerRef={containerRef}
+        zoom={editor.zoom}
+        panRef={editor.panRef}
+        isEditMode={editor.isEditMode}
       />
 
       {isDebugMode && (

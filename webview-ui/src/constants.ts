@@ -111,3 +111,8 @@ export const CHARACTER_HIT_HALF_WIDTH = 8
 export const CHARACTER_HIT_HEIGHT = 24
 export const TOOL_OVERLAY_VERTICAL_OFFSET = 32
 export const PULSE_ANIMATION_DURATION_SEC = 1.5
+
+// ── Prompt Input ────────────────────────────────────────────
+export const PROMPT_INPUT_WIDTH = 240
+export const PROMPT_INPUT_GAP_PX = 8
+export const PROMPT_SEND_DEBOUNCE_MS = 200
