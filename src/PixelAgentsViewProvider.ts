@@ -63,13 +63,25 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.onDidReceiveMessage(async (message) => {
 			if (message.type === 'openClaude') {
+				const folderPath = message.folderPath as string | undefined;
+				if (folderPath) {
+					// Security: verify requested folder is part of the current workspace
+					const isValidFolder = vscode.workspace.workspaceFolders?.some(f => {
+						const relative = path.relative(f.uri.fsPath, folderPath);
+						return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+					});
+					if (!isValidFolder) {
+						vscode.window.showErrorMessage(`Pixel Agents: Cannot open agent in unauthorized folder: ${folderPath}`);
+						return;
+					}
+				}
 				await launchNewTerminal(
 					this.nextAgentId, this.nextTerminalIndex,
 					this.agents, this.activeAgentId, this.knownJsonlFiles,
 					this.fileWatchers, this.pollingTimers, this.waitingTimers, this.permissionTimers,
 					this.jsonlPollTimers, this.projectScanTimer,
 					this.webview, this.persistAgents,
-					message.folderPath as string | undefined,
+					folderPath,
 				);
 			} else if (message.type === 'focusAgent') {
 				const agent = this.agents.get(message.id);
@@ -343,6 +355,10 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 	const indexPath = vscode.Uri.joinPath(distPath, 'index.html').fsPath;
 
 	let html = fs.readFileSync(indexPath, 'utf-8');
+
+	// Inject Content Security Policy
+	const csp = `default-src 'none'; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource};`;
+	html = html.replace('<head>', `<head>\n\t\t<meta http-equiv="Content-Security-Policy" content="${csp}">`);
 
 	html = html.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
 		const fileUri = vscode.Uri.joinPath(distPath, filePath);
