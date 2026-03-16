@@ -344,6 +344,13 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 
 	let html = fs.readFileSync(indexPath, 'utf-8');
 
+	const cspSource = webview.cspSource;
+	const csp = `
+		<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} https: data:; script-src ${cspSource} 'unsafe-eval'; style-src ${cspSource} 'unsafe-inline'; font-src ${cspSource}; connect-src ${cspSource} https:;">
+	`;
+
+	html = html.replace(/<head>/i, `<head>${csp}`);
+
 	html = html.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
 		const fileUri = vscode.Uri.joinPath(distPath, filePath);
 		const webviewUri = webview.asWebviewUri(fileUri);
