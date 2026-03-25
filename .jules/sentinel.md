@@ -1,0 +1,4 @@
+## 2025-05-15 - [Content Security Policy (CSP) Implementation]
+**Vulnerability:** Lack of Content Security Policy (CSP) in the VS Code webview allowed for potential Cross-Site Scripting (XSS) attacks. Without a CSP, the webview could execute arbitrary scripts or load resources from unauthorized origins.
+**Learning:** VS Code webviews have `enableScripts: true` by default if not specified otherwise, and even with it, a strong CSP is the primary defense against XSS. Using a cryptographically secure nonce for script execution is a standard best practice for VS Code extensions to ensure that only scripts provided by the extension are executed.
+**Prevention:** Always implement a restrictive Content Security Policy in `vscode.Webview` instances. Use `default-src 'none'` and explicitly allow only necessary resources. For scripts, use a secure nonce generated with `crypto.randomBytes(32).toString('base64')` and apply it to all `<script>` tags.
