@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -344,11 +345,20 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 
 	let html = fs.readFileSync(indexPath, 'utf-8');
 
+	const nonce = crypto.randomBytes(32).toString('base64');
+
 	html = html.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
 		const fileUri = vscode.Uri.joinPath(distPath, filePath);
 		const webviewUri = webview.asWebviewUri(fileUri);
 		return `${attr}="${webviewUri}"`;
 	});
+
+	// Inject CSP
+	const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:; script-src 'nonce-${nonce}';">`;
+	html = html.replace('<head>', `<head>${csp}`);
+
+	// Add nonce to script tag
+	html = html.replace('<script ', `<script nonce="${nonce}" `);
 
 	return html;
 }
