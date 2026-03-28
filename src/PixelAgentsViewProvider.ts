@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -59,7 +60,8 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	resolveWebviewView(webviewView: vscode.WebviewView) {
 		this.webviewView = webviewView;
 		webviewView.webview.options = { enableScripts: true };
-		webviewView.webview.html = getWebviewContent(webviewView.webview, this.extensionUri);
+		const nonce = getNonce();
+		webviewView.webview.html = getWebviewContent(webviewView.webview, this.extensionUri, nonce);
 
 		webviewView.webview.onDidReceiveMessage(async (message) => {
 			if (message.type === 'openClaude') {
@@ -338,11 +340,21 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	}
 }
 
-export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri): string {
+export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, nonce: string): string {
 	const distPath = vscode.Uri.joinPath(extensionUri, 'dist', 'webview');
 	const indexPath = vscode.Uri.joinPath(distPath, 'index.html').fsPath;
 
 	let html = fs.readFileSync(indexPath, 'utf-8');
+
+	const csp = [
+		"default-src 'none'",
+		`style-src ${webview.cspSource} 'unsafe-inline'`,
+		`img-src ${webview.cspSource} data:`,
+		`script-src 'nonce-${nonce}'`,
+		`font-src ${webview.cspSource}`,
+	].join('; ');
+
+	html = html.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="${csp}">`);
 
 	html = html.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
 		const fileUri = vscode.Uri.joinPath(distPath, filePath);
@@ -350,5 +362,12 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 		return `${attr}="${webviewUri}"`;
 	});
 
+	// Add nonce to script tags
+	html = html.replace(/<script/g, `<script nonce="${nonce}"`);
+
 	return html;
+}
+
+function getNonce() {
+	return crypto.randomBytes(16).toString('base64');
 }
