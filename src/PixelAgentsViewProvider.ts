@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -58,8 +59,15 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
 	resolveWebviewView(webviewView: vscode.WebviewView) {
 		this.webviewView = webviewView;
-		webviewView.webview.options = { enableScripts: true };
-		webviewView.webview.html = getWebviewContent(webviewView.webview, this.extensionUri);
+		const nonce = crypto.randomBytes(32).toString('base64');
+		webviewView.webview.options = {
+			enableScripts: true,
+			localResourceRoots: [
+				vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview'),
+				vscode.Uri.joinPath(this.extensionUri, 'dist', 'assets'),
+			],
+		};
+		webviewView.webview.html = getWebviewContent(webviewView.webview, this.extensionUri, nonce);
 
 		webviewView.webview.onDidReceiveMessage(async (message) => {
 			if (message.type === 'openClaude') {
@@ -338,16 +346,38 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	}
 }
 
-export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri): string {
+export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, nonce: string): string {
 	const distPath = vscode.Uri.joinPath(extensionUri, 'dist', 'webview');
 	const indexPath = vscode.Uri.joinPath(distPath, 'index.html').fsPath;
 
 	let html = fs.readFileSync(indexPath, 'utf-8');
 
+	// Inject Content Security Policy
+	const csp = [
+		"default-src 'none';",
+		`script-src 'nonce-${nonce}';`,
+		`style-src 'unsafe-inline' ${webview.cspSource};`,
+		`img-src ${webview.cspSource} https: data:;`,
+		`font-src ${webview.cspSource};`,
+		`connect-src ${webview.cspSource} https:;`,
+	].join(' ');
+
+	html = html.replace(
+		'<head>',
+		`<head>\n    <meta http-equiv="Content-Security-Policy" content="${csp}">`
+	);
+
+	// Transform resource paths (href/src="./...") and inject nonce into script tags
+	// 1. Convert all relative paths to webview URIs
 	html = html.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
 		const fileUri = vscode.Uri.joinPath(distPath, filePath);
 		const webviewUri = webview.asWebviewUri(fileUri);
 		return `${attr}="${webviewUri}"`;
+	});
+
+	// 2. Inject nonce into all <script> tags
+	html = html.replace(/<script\b([^>]*)>/g, (_match, attrs) => {
+		return `<script${attrs} nonce="${nonce}">`;
 	});
 
 	return html;
