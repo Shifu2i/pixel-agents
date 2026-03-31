@@ -34,6 +34,17 @@ export async function launchNewTerminal(
 	folderPath?: string,
 ): Promise<void> {
 	const folders = vscode.workspace.workspaceFolders;
+
+	// Security: Validate folderPath if provided from webview
+	if (folderPath) {
+		const folderUri = vscode.Uri.file(folderPath);
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(folderUri);
+		if (!workspaceFolder) {
+			vscode.window.showWarningMessage(`Pixel Agents Security: Blocked terminal launch in unauthorized path: ${folderPath}`);
+			return;
+		}
+	}
+
 	const cwd = folderPath || folders?.[0]?.uri.fsPath;
 	const isMultiRoot = !!(folders && folders.length > 1);
 	const idx = nextTerminalIndexRef.current++;
