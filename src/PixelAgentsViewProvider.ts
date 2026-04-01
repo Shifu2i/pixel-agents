@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import type { AgentState } from './types.js';
 import {
@@ -58,7 +59,12 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
 	resolveWebviewView(webviewView: vscode.WebviewView) {
 		this.webviewView = webviewView;
-		webviewView.webview.options = { enableScripts: true };
+		webviewView.webview.options = {
+			enableScripts: true,
+			localResourceRoots: [
+				vscode.Uri.joinPath(this.extensionUri, 'dist'),
+			],
+		};
 		webviewView.webview.html = getWebviewContent(webviewView.webview, this.extensionUri);
 
 		webviewView.webview.onDidReceiveMessage(async (message) => {
@@ -344,11 +350,36 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 
 	let html = fs.readFileSync(indexPath, 'utf-8');
 
+	const nonce = crypto.randomBytes(32).toString('base64');
+
+	// Replace relative paths with webview URIs and inject nonces for scripts
 	html = html.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
 		const fileUri = vscode.Uri.joinPath(distPath, filePath);
 		const webviewUri = webview.asWebviewUri(fileUri);
+
+		if (attr === 'src' && filePath.endsWith('.js')) {
+			return `${attr}="${webviewUri}" nonce="${nonce}"`;
+		}
 		return `${attr}="${webviewUri}"`;
 	});
+
+	// Inject CSP meta tag and nonce into any inline scripts or styles if they exist
+	// In this app, we mainly need it for the bundled scripts and potentially some styles.
+	const csp = [
+		`default-src 'none';`,
+		`img-src ${webview.cspSource} data:;`,
+		`script-src ${webview.cspSource} 'nonce-${nonce}';`,
+		`style-src ${webview.cspSource} 'unsafe-inline';`, // unsafe-inline needed for React/Vite styles if they aren't fully extracted
+		`font-src ${webview.cspSource};`,
+		`media-src ${webview.cspSource};`,
+		`connect-src ${webview.cspSource};`,
+	].join(' ');
+
+	html = html.replace(
+		/<head>/i,
+		`<head>
+    <meta http-equiv="Content-Security-Policy" content="${csp}">`
+	);
 
 	return html;
 }
