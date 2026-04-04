@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -58,7 +59,12 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
 	resolveWebviewView(webviewView: vscode.WebviewView) {
 		this.webviewView = webviewView;
-		webviewView.webview.options = { enableScripts: true };
+		webviewView.webview.options = {
+			enableScripts: true,
+			localResourceRoots: [
+				vscode.Uri.joinPath(this.extensionUri, 'dist')
+			]
+		};
 		webviewView.webview.html = getWebviewContent(webviewView.webview, this.extensionUri);
 
 		webviewView.webview.onDidReceiveMessage(async (message) => {
@@ -344,11 +350,25 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 
 	let html = fs.readFileSync(indexPath, 'utf-8');
 
+	const nonce = getNonce();
+
+	// Inject CSP
+	const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} https: data:; font-src ${webview.cspSource};">`;
+	html = html.replace(/<head>/i, `<head>${csp}`);
+
+	// Replace relative paths
 	html = html.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
 		const fileUri = vscode.Uri.joinPath(distPath, filePath);
 		const webviewUri = webview.asWebviewUri(fileUri);
 		return `${attr}="${webviewUri}"`;
 	});
 
+	// Add nonce to script tags (module and regular)
+	html = html.replace(/<script(?=(\s|>|$))/g, `<script nonce="${nonce}"`);
+
 	return html;
+}
+
+function getNonce() {
+	return crypto.randomBytes(16).toString('base64');
 }
