@@ -1,0 +1,4 @@
+## 2025-05-15 - Path Traversal in Terminal Launch
+**Vulnerability:** The webview can send an arbitrary `folderPath` to the extension to launch a new terminal. Without validation, a malicious or compromised webview could request to open a terminal in sensitive directories outside the user's workspace, leading to unauthorized file access or command execution if the user interacts with that terminal.
+**Learning:** VS Code webview messages should always be treated as untrusted input. Even if the webview is internal, the "Defense in Depth" principle requires validating any path-related parameters against the active workspace.
+**Prevention:** Use `vscode.workspace.getWorkspaceFolder(vscode.Uri.file(path))` to ensure that any path provided by the webview belongs to one of the currently open workspace folders before using it for sensitive operations like setting a terminal's `cwd`.
