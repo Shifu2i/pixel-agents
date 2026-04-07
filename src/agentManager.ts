@@ -34,6 +34,17 @@ export async function launchNewTerminal(
 	folderPath?: string,
 ): Promise<void> {
 	const folders = vscode.workspace.workspaceFolders;
+
+	// Security: Validate folderPath if provided from webview
+	if (folderPath) {
+		const folderUri = vscode.Uri.file(folderPath);
+		const folder = vscode.workspace.getWorkspaceFolder(folderUri);
+		if (!folder) {
+			vscode.window.showWarningMessage(`Pixel Agents: Invalid folder path "${folderPath}" - it must be within the current workspace.`);
+			return;
+		}
+	}
+
 	const cwd = folderPath || folders?.[0]?.uri.fsPath;
 	const isMultiRoot = !!(folders && folders.length > 1);
 	const idx = nextTerminalIndexRef.current++;
