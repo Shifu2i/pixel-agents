@@ -1,0 +1,4 @@
+## 2026-04-14 - Missing Content Security Policy (CSP)
+**Vulnerability:** The VS Code extension's webview was found to be missing a Content Security Policy (CSP). This absence leaves the application vulnerable to Cross-Site Scripting (XSS) attacks, as it does not restrict where scripts, styles, and other resources can be loaded from or executed.
+**Learning:** Developers often overlook CSP in VS Code webviews under the assumption that they are naturally isolated. However, a webview is still a browser-like environment where malicious input could potentially lead to script execution if not properly restricted.
+**Prevention:** Always implement a strict CSP in every webview by using a `<meta http-equiv="Content-Security-Policy" ...>` tag. The policy should follow the principle of least privilege, restricting `default-src` to 'none' and explicitly allowing only necessary sources (e.g., using `webview.asWebviewUri`).
