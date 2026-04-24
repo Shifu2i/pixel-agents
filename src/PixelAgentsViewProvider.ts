@@ -344,11 +344,38 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 
 	let html = fs.readFileSync(indexPath, 'utf-8');
 
+	const nonce = getNonce();
+
+	// Inject CSP
+	const csp = [
+		`default-src 'none';`,
+		`img-src ${webview.cspSource} data:;`,
+		`script-src ${webview.cspSource} 'nonce-${nonce}';`,
+		`style-src ${webview.cspSource} 'unsafe-inline';`,
+		`font-src ${webview.cspSource};`,
+		`connect-src ${webview.cspSource};`,
+		`media-src ${webview.cspSource} data:;`
+	].join(' ');
+
+	html = html.replace(/<head>/i, `<head>\n    <meta http-equiv="Content-Security-Policy" content="${csp}">`);
+
+	// Apply nonce to script tags and replace relative paths with webview URIs
 	html = html.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
 		const fileUri = vscode.Uri.joinPath(distPath, filePath);
 		const webviewUri = webview.asWebviewUri(fileUri);
-		return `${attr}="${webviewUri}"`;
+		const nonceAttr = (attr === 'src' && filePath.endsWith('.js')) ? ` nonce="${nonce}"` : '';
+		return `${attr}="${webviewUri}"${nonceAttr}`;
 	});
 
 	return html;
+}
+
+function getNonce() {
+	let text = '';
+	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	const randomBytes = require('crypto').randomBytes(32);
+	for (let i = 0; i < 32; i++) {
+		text += possible.charAt(randomBytes[i] % possible.length);
+	}
+	return text;
 }
