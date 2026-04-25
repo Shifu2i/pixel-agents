@@ -1,0 +1,4 @@
+## 2026-04-20 - Prevent Path Traversal in Terminal Launch
+**Vulnerability:** Path traversal risk when launching a new terminal from a webview message. The `folderPath` parameter from the `openClaude` message was used as the terminal's `cwd` without validation, allowing a malicious webview (or XSS) to launch terminals in arbitrary filesystem locations.
+**Learning:** Even internal webview messages must be treated as untrusted input. A regression occurred where workspace folder validation was missing despite being a known security requirement for this project.
+**Prevention:** Always validate folder paths received from the webview against `vscode.workspace.workspaceFolders` using `vscode.workspace.getWorkspaceFolder`. Provide a safe fallback (e.g., the primary workspace root) and notify the user if an invalid path is requested.
