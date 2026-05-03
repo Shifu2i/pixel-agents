@@ -34,7 +34,18 @@ export async function launchNewTerminal(
 	folderPath?: string,
 ): Promise<void> {
 	const folders = vscode.workspace.workspaceFolders;
-	const cwd = folderPath || folders?.[0]?.uri.fsPath;
+	let cwd = folderPath || folders?.[0]?.uri.fsPath;
+
+	// Security: Validate folderPath if provided from webview to prevent path traversal
+	if (folderPath && folders) {
+		const uri = vscode.Uri.file(folderPath);
+		const folder = vscode.workspace.getWorkspaceFolder(uri);
+		if (!folder) {
+			vscode.window.showWarningMessage('Pixel Agents: Requested folder is outside active workspace. Falling back to default.');
+			cwd = folders[0].uri.fsPath;
+		}
+	}
+
 	const isMultiRoot = !!(folders && folders.length > 1);
 	const idx = nextTerminalIndexRef.current++;
 	const terminal = vscode.window.createTerminal({
