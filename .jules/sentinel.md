@@ -1,0 +1,4 @@
+## 2026-04-30 - Remediation of Path Traversal in Agent Launch
+**Vulnerability:** The `openClaude` message from the webview included a `folderPath` parameter that was used directly as the `cwd` for new terminals without validation. This could allow a malicious webview (or a compromised one) to launch terminals in sensitive directories outside the current workspace.
+**Learning:** Input validation is essential for any data crossing the bridge between the webview and the extension host, especially when it involves filesystem paths or system commands. VS Code extensions should not assume that messages from their own webviews are safe if they contain parameters that affect host-level operations.
+**Prevention:** Always validate folder paths against `vscode.workspace.workspaceFolders` using `vscode.workspace.getWorkspaceFolder`. If a path is invalid or outside the workspace, fall back to a safe default and notify the user.
