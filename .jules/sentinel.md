@@ -1,0 +1,4 @@
+## 2026-04-30 - Path Traversal Prevention in Terminal Launch
+**Vulnerability:** The `openClaude` message from the webview allowed an arbitrary `folderPath` to be used as the `cwd` for a new VS Code terminal. A malicious or compromised webview could potentially launch terminals in sensitive directories outside the active workspace.
+**Learning:** Messages from webviews must be treated as untrusted input. Even if the UI only provides valid workspace folders, the underlying `postMessage` API can be used to send arbitrary paths.
+**Prevention:** Always validate paths received from the webview against `vscode.workspace.workspaceFolders`. Use `vscode.workspace.getWorkspaceFolder` to ensure a given path belongs to the current workspace before using it for sensitive operations like launching terminals or reading files.
