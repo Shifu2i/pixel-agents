@@ -1,0 +1,4 @@
+## 2026-04-30 - Path Traversal Prevention in Terminal Launch
+**Vulnerability:** A compromised webview could send an `openClaude` message with an arbitrary `folderPath`. Since this path was used as the `cwd` for `vscode.window.createTerminal`, it could allow an attacker to launch Claude sessions in sensitive directories outside the active workspace.
+**Learning:** Even within a VS Code extension, inputs from webviews must be treated as untrusted and validated against workspace boundaries. The `vscode.workspace.getWorkspaceFolder` API is the standard way to perform this validation.
+**Prevention:** Always validate folder paths received from the webview against `vscode.workspace.workspaceFolders`. If invalid, fall back to a safe default (like the first workspace folder) and notify the user with `vscode.window.showWarningMessage`.
