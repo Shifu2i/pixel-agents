@@ -350,5 +350,8 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 		return `${attr}="${webviewUri}"`;
 	});
 
+	html = html.replace('<head>', `<head>
+		<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource}; img-src ${webview.cspSource} data:;">`);
+
 	return html;
 }
