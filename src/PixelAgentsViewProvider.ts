@@ -344,11 +344,17 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 
 	let html = fs.readFileSync(indexPath, 'utf-8');
 
-	html = html.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
-		const fileUri = vscode.Uri.joinPath(distPath, filePath);
-		const webviewUri = webview.asWebviewUri(fileUri);
-		return `${attr}="${webviewUri}"`;
-	});
+	// Define strict Content Security Policy
+	const csp = `default-src 'none'; img-src ${webview.cspSource}; script-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline';`;
+
+	// Inject CSP meta tag and replace relative paths with webview URIs
+	html = html
+		.replace('<head>', `<head>\n    <meta http-equiv="Content-Security-Policy" content="${csp}">`)
+		.replace(/(href|src)="\.\/([^"]+)"/g, (_match, attr, filePath) => {
+			const fileUri = vscode.Uri.joinPath(distPath, filePath);
+			const webviewUri = webview.asWebviewUri(fileUri);
+			return `${attr}="${webviewUri}"`;
+		});
 
 	return html;
 }
