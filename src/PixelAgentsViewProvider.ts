@@ -63,13 +63,23 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.onDidReceiveMessage(async (message) => {
 			if (message.type === 'openClaude') {
+				let folderPath: string | undefined;
+				if (typeof message.folderPath === 'string') {
+					folderPath = message.folderPath;
+					const folderUri = vscode.Uri.file(folderPath);
+					const workspaceFolder = vscode.workspace.getWorkspaceFolder(folderUri);
+					if (!workspaceFolder) {
+						vscode.window.showWarningMessage(`Pixel Agents: Invalid folder path "${folderPath}". Defaulting to workspace root.`);
+						folderPath = undefined;
+					}
+				}
 				await launchNewTerminal(
 					this.nextAgentId, this.nextTerminalIndex,
 					this.agents, this.activeAgentId, this.knownJsonlFiles,
 					this.fileWatchers, this.pollingTimers, this.waitingTimers, this.permissionTimers,
 					this.jsonlPollTimers, this.projectScanTimer,
 					this.webview, this.persistAgents,
-					message.folderPath as string | undefined,
+					folderPath,
 				);
 			} else if (message.type === 'focusAgent') {
 				const agent = this.agents.get(message.id);
