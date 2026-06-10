@@ -32,9 +32,21 @@ export async function launchNewTerminal(
 	webview: vscode.Webview | undefined,
 	persistAgents: () => void,
 	folderPath?: string,
-): Promise<void> {
+): Promise<boolean> {
 	const folders = vscode.workspace.workspaceFolders;
-	const cwd = folderPath || folders?.[0]?.uri.fsPath;
+	let cwd = folderPath || folders?.[0]?.uri.fsPath;
+	let validationPassed = true;
+
+	if (folderPath) {
+		// Validate that the requested path belongs to the current workspace
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(folderPath));
+		if (!workspaceFolder) {
+			console.warn(`[Pixel Agents] Security: Requested folderPath is outside workspace: ${folderPath}`);
+			cwd = folders?.[0]?.uri.fsPath;
+			validationPassed = false;
+		}
+	}
+
 	const isMultiRoot = !!(folders && folders.length > 1);
 	const idx = nextTerminalIndexRef.current++;
 	const terminal = vscode.window.createTerminal({
@@ -49,7 +61,7 @@ export async function launchNewTerminal(
 	const projectDir = getProjectDirPath(cwd);
 	if (!projectDir) {
 		console.log(`[Pixel Agents] No project dir, cannot track agent`);
-		return;
+		return validationPassed;
 	}
 
 	// Pre-register expected JSONL file so project scan won't treat it as a /clear file
@@ -102,6 +114,8 @@ export async function launchNewTerminal(
 		} catch { /* file may not exist yet */ }
 	}, JSONL_POLL_INTERVAL_MS);
 	jsonlPollTimers.set(id, pollTimer);
+
+	return validationPassed;
 }
 
 export function removeAgent(

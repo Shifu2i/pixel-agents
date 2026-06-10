@@ -63,7 +63,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.onDidReceiveMessage(async (message) => {
 			if (message.type === 'openClaude') {
-				await launchNewTerminal(
+				const success = await launchNewTerminal(
 					this.nextAgentId, this.nextTerminalIndex,
 					this.agents, this.activeAgentId, this.knownJsonlFiles,
 					this.fileWatchers, this.pollingTimers, this.waitingTimers, this.permissionTimers,
@@ -71,6 +71,9 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 					this.webview, this.persistAgents,
 					message.folderPath as string | undefined,
 				);
+				if (!success) {
+					vscode.window.showWarningMessage('Pixel Agents: Requested folder is outside the current workspace. Defaulting to workspace root.');
+				}
 			} else if (message.type === 'focusAgent') {
 				const agent = this.agents.get(message.id);
 				if (agent) {
