@@ -32,8 +32,19 @@ export async function launchNewTerminal(
 	webview: vscode.Webview | undefined,
 	persistAgents: () => void,
 	folderPath?: string,
-): Promise<void> {
+): Promise<boolean> {
 	const folders = vscode.workspace.workspaceFolders;
+
+	// Security: Validate folderPath is within workspace to prevent path traversal
+	if (folderPath) {
+		const folderUri = vscode.Uri.file(folderPath);
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(folderUri);
+		if (!workspaceFolder) {
+			console.warn(`[Pixel Agents] 🛡️ Blocked terminal launch in unauthorized path: ${folderPath}`);
+			return false;
+		}
+	}
+
 	const cwd = folderPath || folders?.[0]?.uri.fsPath;
 	const isMultiRoot = !!(folders && folders.length > 1);
 	const idx = nextTerminalIndexRef.current++;
@@ -49,7 +60,7 @@ export async function launchNewTerminal(
 	const projectDir = getProjectDirPath(cwd);
 	if (!projectDir) {
 		console.log(`[Pixel Agents] No project dir, cannot track agent`);
-		return;
+		return true;
 	}
 
 	// Pre-register expected JSONL file so project scan won't treat it as a /clear file
@@ -102,6 +113,8 @@ export async function launchNewTerminal(
 		} catch { /* file may not exist yet */ }
 	}, JSONL_POLL_INTERVAL_MS);
 	jsonlPollTimers.set(id, pollTimer);
+
+	return true;
 }
 
 export function removeAgent(
