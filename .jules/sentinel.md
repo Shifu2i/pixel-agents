@@ -1,0 +1,4 @@
+## 2026-06-11 - Path Traversal in Terminal Launch
+**Vulnerability:** The `launchNewTerminal` function in `src/agentManager.ts` accepted a `folderPath` parameter from the webview and used it directly as the `cwd` for a new terminal without validation. A compromised or malicious webview could trigger the launch of terminals in arbitrary directories outside the user's workspace.
+**Learning:** Even internal messages between a webview and an extension should be treated as untrusted input if they originate from the webview. VS Code's `vscode.workspace.getWorkspaceFolder` is a reliable way to validate if a path belongs to the active workspace.
+**Prevention:** Always validate file paths provided by the webview against the active workspace folders before using them in sensitive operations like launching processes or reading files.
