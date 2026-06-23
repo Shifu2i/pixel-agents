@@ -1,0 +1,4 @@
+## 2026-06-11 - Path Traversal Prevention in Terminal Launch
+**Vulnerability:** The `launchNewTerminal` function accepted a `folderPath` from the webview and used it as the `cwd` for a new terminal without validation. A malicious or buggy webview could potentially request a terminal outside the current workspace.
+**Learning:** Even within VS Code extensions, input from webviews should be treated as untrusted. The extension was trusting that the `folderPath` provided in the `openClaude` message was always a valid workspace sub-folder.
+**Prevention:** Always validate paths received from untrusted sources (like webviews) against `vscode.workspace.workspaceFolders` or using `vscode.workspace.getWorkspaceFolder`. Use `vscode.window.showWarningMessage` to inform the user when an invalid path is rejected.
