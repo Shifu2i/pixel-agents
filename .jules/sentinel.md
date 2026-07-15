@@ -1,0 +1,4 @@
+## 2026-06-11 - [HIGH] Fix path traversal in terminal launch
+**Vulnerability:** Path traversal in terminal launch. The webview could send an arbitrary `folderPath` to the extension via the `openClaude` message, which would then be used as the `cwd` for a new terminal. This could allow an attacker (or a compromised webview) to launch a terminal in any directory on the host system.
+**Learning:** Input from webviews should always be treated as untrusted. In VS Code extensions, paths received from the webview must be validated against the current workspace if they are to be used for sensitive operations like launching terminals.
+**Prevention:** Use `vscode.workspace.getWorkspaceFolder(vscode.Uri.file(folderPath))` to ensure the path belongs to the active workspace. Fall back to a safe default and warn the user if validation fails.
