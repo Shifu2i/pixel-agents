@@ -1,0 +1,4 @@
+## 2026-07-16 - Path Traversal Prevention in Terminal Launch
+**Vulnerability:** Untrusted webview messages can specify a `folderPath` parameter when requesting a new Claude terminal session. If this path is outside of the active VS Code workspace (e.g. `../../private/etc`), it could lead to directory/path traversal risks, executing commands or creating terminal sessions in sensitive paths.
+**Learning:** Terminal sessions launched from messages sent by a webview should never blindly trust the folder path provided. Verification against the active workspace folders is required.
+**Prevention:** Always validate that the provided `folderPath` exists within the workspace using `vscode.workspace.getWorkspaceFolder(vscode.Uri.file(folderPath))`. If the validation fails, fall back to the default workspace and log/display a warning.
