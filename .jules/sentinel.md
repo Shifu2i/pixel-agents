@@ -1,0 +1,4 @@
+## 2026-07-16 - Path Traversal Risk in Terminal Launching
+**Vulnerability:** Launching new terminal sessions from untrusted webview messages (e.g. `openClaude` message) with arbitrary user-provided folder paths allows launching terminals in any location on the system (path traversal/untrusted folder workspace execution).
+**Learning:** Accepting `folderPath` directly from frontend webview messages without validating whether it belongs to the active VS Code workspace folders can allow malicious webviews or compromised components to escape the workspace boundary and interact with arbitrary directories.
+**Prevention:** Always validate `folderPath` from webview messages in VS Code extensions using `vscode.workspace.getWorkspaceFolder(vscode.Uri.file(folderPath))`. Fall back to the default workspace and raise a user-facing warning using `vscode.window.showWarningMessage` if the validation fails.
