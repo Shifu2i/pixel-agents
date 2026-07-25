@@ -1,0 +1,4 @@
+## 2026-07-16 - Path Traversal Prevention in Terminal Launch
+**Vulnerability:** Unsanitized and unvalidated `folderPath` sent via the webview `openClaude` message was used directly as the `cwd` (Current Working Directory) for launching new VS Code terminals. This allowed potential path traversal attacks, allowing arbitrary folder paths outside the active workspace to be targeted for launching terminal sessions.
+**Learning:** Webviews must be treated as untrusted environments. Any input parameter received from the frontend (such as a directory path or command argument) should be validated against safe backend states or APIs before being consumed by powerful Node.js or VS Code APIs.
+**Prevention:** Validate user-supplied paths using `vscode.workspace.getWorkspaceFolder(vscode.Uri.file(folderPath))`. If the path does not reside within the workspace folders, reject or sanitize the path and fallback to a default safe workspace directory, notifying the user.
