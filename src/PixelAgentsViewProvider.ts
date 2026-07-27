@@ -338,6 +338,15 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	}
 }
 
+function getNonce(): string {
+	let text = '';
+	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	for (let i = 0; i < 32; i++) {
+		text += possible.charAt(Math.floor(Math.random() * possible.length));
+	}
+	return text;
+}
+
 export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri): string {
 	const distPath = vscode.Uri.joinPath(extensionUri, 'dist', 'webview');
 	const indexPath = vscode.Uri.joinPath(distPath, 'index.html').fsPath;
@@ -349,6 +358,13 @@ export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.
 		const webviewUri = webview.asWebviewUri(fileUri);
 		return `${attr}="${webviewUri}"`;
 	});
+
+	const nonce = getNonce();
+	const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' ${webview.cspSource}; img-src ${webview.cspSource} https: data:; font-src ${webview.cspSource};">`;
+
+	// Inject CSP meta tag and nonces into script tags
+	html = html.replace('<head>', `<head>\n\t\t${cspMeta}`);
+	html = html.replace(/<script /g, `<script nonce="${nonce}" `);
 
 	return html;
 }
