@@ -1,0 +1,6 @@
+# Sentinel Security Journal
+
+## 2026-07-16 - Path Traversal Prevention in Terminal Launches
+**Vulnerability:** The VS Code extension webview was able to send arbitrary `folderPath` parameters to launch terminals (`openClaude` message handler in `PixelAgentsViewProvider.ts`). Since there was no path validation in `launchNewTerminal`, a malicious or compromised webview could launch VS Code terminals in arbitrary folders outside of the active workspace, potentially exposing sensitive files or causing unexpected code execution in other directories.
+**Learning:** Untrusted input from webviews must always be validated on the backend. When launching resources or processes (such as terminals), the paths must be verified against the workspace boundaries. For VS Code remote environments (such as SSH, WSL, Codespaces, Dev Containers), validation must also preserve the scheme and authority of the active workspace folder.
+**Prevention:** Always validate provided workspace paths against the active workspace folder list (`vscode.workspace.getWorkspaceFolder`). In remote environments, reconstruct the target path URI using `folders[0].uri.with({ path: folderPath })` before validating to properly inherit the scheme and authority.
