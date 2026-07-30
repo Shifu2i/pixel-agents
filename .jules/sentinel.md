@@ -1,0 +1,4 @@
+## 2026-07-16 - Path Traversal Prevention in Terminal Launch
+**Vulnerability:** Path traversal and unauthorized terminal launch directory execution from untrusted webview messages, where a malicious folderPath can be supplied to open terminals outside the active workspace.
+**Learning:** In VS Code extensions, creating URIs using `vscode.Uri.file(path)` hardcodes the `file` scheme, which fails in remote environments (such as SSH, WSL, Codespaces, Dev Containers) where workspaces use distinct URI schemes (e.g., `vscode-remote`).
+**Prevention:** Always validate user/webview-provided paths against the active workspace folders. Inherit the workspace folder scheme and authority using `folders[0].uri.with({ path: folderPath })` before validating with `vscode.workspace.getWorkspaceFolder(...)` to fully support remote workspace schemes safely.
