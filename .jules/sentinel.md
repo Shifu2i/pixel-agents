@@ -1,0 +1,4 @@
+## 2026-07-16 - Path Traversal Prevention in Terminal Launches
+**Vulnerability:** Launching new terminals via webview messages accepting an unvalidated `folderPath` allows terminal execution in arbitrary directories (Path Traversal/Arbitrary Directory execution).
+**Learning:** In VS Code extensions, webview message inputs must always be treated as untrusted. Since the webview runs in a sandboxed but capable environment, any parameter specifying file or directory paths must be validated prior to initiating native operations like `vscode.window.createTerminal({ cwd })`.
+**Prevention:** Always validate native paths passed from the webview against the active workspace folders list using platform-agnostic path checking (`path.relative` and `path.isAbsolute`) rather than URI manipulation, which fails with Windows backslashes or remote URI schemes. If the path falls outside, warn the user and fall back safely to a default directory.
