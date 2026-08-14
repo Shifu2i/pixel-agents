@@ -1,0 +1,4 @@
+## 2026-07-16 - Path Traversal Prevention in Webview Terminals
+**Vulnerability:** A malicious or compromised webview could send an arbitrary `folderPath` parameter via the `openClaude` message, prompting the extension backend to open a new terminal with that path. Without validation, this could launch a shell in sensitive or hidden directories outside the workspace (a path/directory traversal risk).
+**Learning:** The webview-to-extension IPC boundaries must be treated as untrusted. Any client-side parameter specifying filesystem paths should be explicitly verified against the active workspace folder paths.
+**Prevention:** Always perform platform-agnostic path containment checks using native path parsing APIs (such as `path.relative` and checking for `..` segments or absolute transitions) before accepting a path from a webview message. Show user-facing warning messages and fall back to safe defaults when path validation fails.
