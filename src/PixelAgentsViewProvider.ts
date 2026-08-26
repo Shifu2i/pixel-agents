@@ -251,8 +251,14 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 				if (!uris || uris.length === 0) return;
 				try {
 					const raw = fs.readFileSync(uris[0].fsPath, 'utf-8');
-					const imported = JSON.parse(raw) as Record<string, unknown>;
-					if (imported.version !== 1 || !Array.isArray(imported.tiles)) {
+					// Prevent prototype pollution during JSON parsing
+					const imported = JSON.parse(raw, (key, value) => {
+						if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+							return undefined;
+						}
+						return value;
+					}) as Record<string, unknown> | null;
+					if (!imported || typeof imported !== 'object' || imported.version !== 1 || !Array.isArray(imported.tiles)) {
 						vscode.window.showErrorMessage('Pixel Agents: Invalid layout file.');
 						return;
 					}
