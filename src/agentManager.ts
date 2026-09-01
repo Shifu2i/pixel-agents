@@ -34,7 +34,20 @@ export async function launchNewTerminal(
 	folderPath?: string,
 ): Promise<void> {
 	const folders = vscode.workspace.workspaceFolders;
-	const cwd = folderPath || folders?.[0]?.uri.fsPath;
+	let validCwd: string | undefined;
+	if (folderPath && folders) {
+		for (const folder of folders) {
+			const relative = path.relative(folder.uri.fsPath, folderPath);
+			if (relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))) {
+				validCwd = folderPath;
+				break;
+			}
+		}
+		if (!validCwd) {
+			console.warn(`[Pixel Agents] Provided path "${folderPath}" is not within workspace. Falling back to default.`);
+		}
+	}
+	const cwd = validCwd || folders?.[0]?.uri.fsPath;
 	const isMultiRoot = !!(folders && folders.length > 1);
 	const idx = nextTerminalIndexRef.current++;
 	const terminal = vscode.window.createTerminal({
