@@ -86,8 +86,11 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 				console.log(`[Pixel Agents] saveAgentSeats:`, JSON.stringify(message.seats));
 				this.context.workspaceState.update(WORKSPACE_KEY_AGENT_SEATS, message.seats);
 			} else if (message.type === 'saveLayout') {
-				this.layoutWatcher?.markOwnWrite();
-				writeLayoutToFile(message.layout as Record<string, unknown>);
+				const layout = message.layout as Record<string, unknown> | undefined;
+				if (layout && typeof layout === 'object' && layout.version === 1 && Array.isArray(layout.tiles)) {
+					this.layoutWatcher?.markOwnWrite();
+					writeLayoutToFile(layout);
+				}
 			} else if (message.type === 'setSoundEnabled') {
 				this.context.globalState.update(GLOBAL_KEY_SOUND_ENABLED, message.enabled);
 			} else if (message.type === 'webviewReady') {
