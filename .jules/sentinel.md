@@ -1,0 +1,4 @@
+## 2026-07-16 - Path Traversal Prevention in Terminal Launching
+**Vulnerability:** Untrusted `folderPath` parameters sent via webview messages (`openClaude`) were directly set as the working directory (`cwd`) in `vscode.window.createTerminal()`, allowing directory traversal or launching terminals in arbitrary paths outside the workspace.
+**Learning:** User or webview IPC messages can specify arbitrary absolute or relative directory paths. Without validating path containment against `vscode.workspace.workspaceFolders`, extension backends could operate on unvalidated directories.
+**Prevention:** Always validate incoming directory paths against active workspace folders using platform-agnostic path containment checks (`path.relative` and `path.isAbsolute`), falling back securely to default workspace roots if path containment is violated.
