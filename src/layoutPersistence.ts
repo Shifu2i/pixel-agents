@@ -13,12 +13,22 @@ function getLayoutFilePath(): string {
 	return path.join(os.homedir(), LAYOUT_FILE_DIR, LAYOUT_FILE_NAME);
 }
 
+/** Safely parse JSON string preventing prototype pollution. */
+function safeJsonParse<T = Record<string, unknown>>(raw: string): T {
+	return JSON.parse(raw, (key, value) => {
+		if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+			return undefined;
+		}
+		return value;
+	}) as T;
+}
+
 export function readLayoutFromFile(): Record<string, unknown> | null {
 	const filePath = getLayoutFilePath();
 	try {
 		if (!fs.existsSync(filePath)) return null;
 		const raw = fs.readFileSync(filePath, 'utf-8');
-		return JSON.parse(raw) as Record<string, unknown>;
+		return safeJsonParse(raw);
 	} catch (err) {
 		console.error('[Pixel Agents] Failed to read layout file:', err);
 		return null;
@@ -114,7 +124,7 @@ export function watchLayoutFile(
 			}
 
 			const raw = fs.readFileSync(filePath, 'utf-8');
-			const layout = JSON.parse(raw) as Record<string, unknown>;
+			const layout = safeJsonParse(raw);
 			console.log('[Pixel Agents] External layout change detected');
 			onExternalChange(layout);
 		} catch (err) {
