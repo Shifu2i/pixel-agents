@@ -1,0 +1,4 @@
+## 2026-09-20 - Path Traversal Prevention in Webview Terminal Launch
+**Vulnerability:** Unsanitized `folderPath` parameter sent from the webview to `launchNewTerminal` could allow launching terminals in arbitrary host directories outside the workspace.
+**Learning:** Webview messages must be treated as untrusted input. When accepting path inputs from webviews to configure terminal or process working directories (`cwd`), validating that the requested path resides within an open workspace folder prevents unauthorized directory access or execution context manipulation.
+**Prevention:** Always validate user/webview-provided filesystem paths against `vscode.workspace.workspaceFolders` using cross-platform containment checks (`path.relative` and `path.isAbsolute`) before assigning them to terminal `cwd` options.
