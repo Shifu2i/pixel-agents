@@ -15,7 +15,7 @@ import {
 import { ensureProjectScan } from './fileWatcher.js';
 import { loadFurnitureAssets, sendAssetsToWebview, loadFloorTiles, sendFloorTilesToWebview, loadWallTiles, sendWallTilesToWebview, loadCharacterSprites, sendCharacterSpritesToWebview, loadDefaultLayout } from './assetLoader.js';
 import { WORKSPACE_KEY_AGENT_SEATS, GLOBAL_KEY_SOUND_ENABLED } from './constants.js';
-import { writeLayoutToFile, readLayoutFromFile, watchLayoutFile } from './layoutPersistence.js';
+import { writeLayoutToFile, readLayoutFromFile, watchLayoutFile, safeJsonParse } from './layoutPersistence.js';
 import type { LayoutWatcher } from './layoutPersistence.js';
 
 export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
@@ -86,8 +86,13 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 				console.log(`[Pixel Agents] saveAgentSeats:`, JSON.stringify(message.seats));
 				this.context.workspaceState.update(WORKSPACE_KEY_AGENT_SEATS, message.seats);
 			} else if (message.type === 'saveLayout') {
+				const layout = message.layout as Record<string, unknown> | undefined;
+				if (!layout || typeof layout !== 'object' || layout.version !== 1 || !Array.isArray(layout.tiles)) {
+					console.error('[Pixel Agents] Invalid saveLayout message format');
+					return;
+				}
 				this.layoutWatcher?.markOwnWrite();
-				writeLayoutToFile(message.layout as Record<string, unknown>);
+				writeLayoutToFile(layout);
 			} else if (message.type === 'setSoundEnabled') {
 				this.context.globalState.update(GLOBAL_KEY_SOUND_ENABLED, message.enabled);
 			} else if (message.type === 'webviewReady') {
@@ -251,7 +256,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 				if (!uris || uris.length === 0) return;
 				try {
 					const raw = fs.readFileSync(uris[0].fsPath, 'utf-8');
-					const imported = JSON.parse(raw) as Record<string, unknown>;
+					const imported = safeJsonParse<Record<string, unknown>>(raw);
 					if (imported.version !== 1 || !Array.isArray(imported.tiles)) {
 						vscode.window.showErrorMessage('Pixel Agents: Invalid layout file.');
 						return;
