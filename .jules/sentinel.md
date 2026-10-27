@@ -1,0 +1,4 @@
+## 2026-10-15 - Path Traversal Prevention in Terminal Folder Launches
+**Vulnerability:** Untrusted `folderPath` string supplied via webview messages in `launchNewTerminal` could allow launching terminal instances in arbitrary filesystem directories outside the active workspace.
+**Learning:** In VS Code extensions that accept path arguments from webviews or webview messages, simple string containment checks or string operations can be bypassed. Furthermore, constructing VS Code URIs with `vscode.Uri.file` fails in remote environments (SSH/WSL/Containers).
+**Prevention:** Always validate user/webview-provided paths against `vscode.workspace.workspaceFolders` using cross-platform native path checks (`path.relative` and `path.isAbsolute`) against `folder.uri.fsPath` before using them as working directories for process or terminal spawning.
