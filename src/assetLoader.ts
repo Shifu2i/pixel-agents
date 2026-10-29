@@ -50,6 +50,18 @@ export interface LoadedAssets {
 }
 
 /**
+ * Safely parse JSON while preventing prototype pollution.
+ */
+function safeJsonParse(jsonString: string): unknown {
+  return JSON.parse(jsonString, (key, value) => {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      return undefined;
+    }
+    return value;
+  });
+}
+
+/**
  * Load furniture assets from disk
  */
 export async function loadFurnitureAssets(
@@ -68,8 +80,8 @@ export async function loadFurnitureAssets(
     console.log('📦 Loading furniture assets from:', catalogPath)
 
     const catalogContent = fs.readFileSync(catalogPath, 'utf-8')
-    const catalogData = JSON.parse(catalogContent)
-    const catalog: FurnitureAsset[] = catalogData.assets || []
+    const catalogData = safeJsonParse(catalogContent) as { assets?: FurnitureAsset[] } | null
+    const catalog: FurnitureAsset[] = catalogData?.assets || []
 
     const sprites = new Map<string, string[][]>()
 
@@ -175,8 +187,10 @@ export function loadDefaultLayout(assetsRoot: string): Record<string, unknown> |
       return null
     }
     const content = fs.readFileSync(layoutPath, 'utf-8')
-    const layout = JSON.parse(content) as Record<string, unknown>
-    console.log(`[AssetLoader] ✅ Loaded default layout (${layout.cols}×${layout.rows})`)
+    const layout = safeJsonParse(content) as Record<string, unknown> | null
+    if (layout) {
+      console.log(`[AssetLoader] ✅ Loaded default layout (${layout.cols}×${layout.rows})`)
+    }
     return layout
   } catch (err) {
     console.error(`[AssetLoader] ❌ Error loading default layout: ${err instanceof Error ? err.message : err}`)
