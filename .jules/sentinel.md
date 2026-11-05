@@ -1,0 +1,4 @@
+## 2026-11-05 - Path Traversal Prevention in Terminal Launch
+**Vulnerability:** Untrusted `folderPath` strings passed in webview messages (`openClaude`) were used directly as the `cwd` when creating new VS Code terminals, allowing arbitrary directory access or path traversal outside the workspace.
+**Learning:** In VS Code extensions handling multi-root workspaces, user- or webview-supplied paths must be validated against `vscode.workspace.workspaceFolders`. Native `path.relative` containment checks (`!rel.startsWith('..') && !path.isAbsolute(rel)`) avoid URI path manipulation issues across local and remote platforms.
+**Prevention:** Always validate and normalize external paths against the active workspace folders before passing them to OS-level operations such as terminal creation or file watchers.
